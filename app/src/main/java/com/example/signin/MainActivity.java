@@ -1,5 +1,6 @@
 package com.example.signin;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -45,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
         password=(EditText)findViewById(R.id.edit_pass);
         textView=(TextView)findViewById(R.id.tv_result);
 
+
+        //还应该有判断手机是否处于联网状态弹出消息提醒
         btn_in=(Button)findViewById(R.id.btn_denglu);
 
         //设置登录的监听事件
@@ -66,10 +69,10 @@ public class MainActivity extends AppCompatActivity {
 
 
     //网址：192.168.136.122:8080/MySign/login
-
+    //登录连接服务器
     private void loginSendData(String name,String password){
         AsyncHttpClient asyncHttpClient= new AsyncHttpClient();
-        String url="120.78.76.219/CP/servlet/login";
+        String url="http://120.78.76.219/CP/servlet/login";
         RequestParams params=new RequestParams();
         params.put("username",name);
         params.put("userpass",password);
@@ -77,6 +80,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
                 if (statusCode==200){
+                    Intent intent= new Intent(MainActivity.this,Second.class);
+                    //不知道responsebody里的数据是怎么写的
                     sendIP(getLocalIpAddress(),getCurrentTime());
 
                     /*textView.setText(new String(responseBody));
@@ -118,10 +123,10 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
-
+    //发送手机的IP和时间
     private void sendIP(String myIP,String str){
         AsyncHttpClient asyncHttpClient= new AsyncHttpClient();
-        String url="120.78.76.219/CP/servlet/receive";
+        String url="http://120.78.76.219/CP/servlet/receive";
         RequestParams params=new RequestParams();
         params.put("ip",myIP);
         params.put("time",str);
@@ -137,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+    //获取系统的时间
     private String getCurrentTime(){
 
         SimpleDateFormat formatter = new SimpleDateFormat ("yyyy年MM月dd日 HH时mm分ss秒");
