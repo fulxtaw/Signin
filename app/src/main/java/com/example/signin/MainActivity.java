@@ -1,8 +1,12 @@
 package com.example.signin;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -16,6 +20,7 @@ import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RangeFileAsyncHttpResponseHandler;
 import com.loopj.android.http.RequestHandle;
 import com.loopj.android.http.RequestParams;
+import com.loopj.android.http.TextHttpResponseHandler;
 
 import java.io.File;
 import java.net.InetAddress;
@@ -26,9 +31,14 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import cz.msebera.android.httpclient.Header;
 import cz.msebera.android.httpclient.conn.util.InetAddressUtils;
+
+import static com.example.signin.Second.isWifiEnabled;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -46,18 +56,23 @@ public class MainActivity extends AppCompatActivity {
         password=(EditText)findViewById(R.id.edit_pass);
         textView=(TextView)findViewById(R.id.tv_result);
 
-
-        //还应该有判断手机是否处于联网状态弹出消息提醒
         btn_in=(Button)findViewById(R.id.btn_denglu);
+
+
 
         //设置登录的监听事件
         btn_in.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                //判断手机是否处于联网状态弹出消息提醒
+                if (!isWifiEnabled(getApplicationContext())){
+                    Toast.makeText(getApplicationContext(),"请连接网络！",Toast.LENGTH_LONG).show();
+                }
+
                 String username=name.getText().toString();
                 String userpass=password.getText().toString();
                 if(TextUtils.isEmpty(username.trim())||TextUtils.isEmpty(userpass.trim())){
-                    Toast.makeText(getApplicationContext(),"登录成功",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(),"账号或密码不能为空！",Toast.LENGTH_SHORT).show();
 
                 }else{
                     loginSendData(username,userpass);
@@ -76,80 +91,38 @@ public class MainActivity extends AppCompatActivity {
         RequestParams params=new RequestParams();
         params.put("username",name);
         params.put("userpass",password);
-        asyncHttpClient.post(url.toString().trim(), params, new AsyncHttpResponseHandler() {
+        asyncHttpClient.post(url.toString().trim(), params, new TextHttpResponseHandler() {
             @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
+                //打印异常信息
+                throwable.printStackTrace();
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, String responseString) {
                 if (statusCode==200){
+                    //获取Id
+                    final String id = responseString;
+                    Log.d("获得的返回值______________",id);
+
+
                     Intent intent= new Intent(MainActivity.this,Second.class);
-                    //不知道responsebody里的数据是怎么写的
-                    sendIP(getLocalIpAddress(),getCurrentTime());
+                    Bundle bundle= new Bundle();
+                    bundle.putString("id",id);
+                    intent.putExtra("bundle",bundle);
+
+                    startActivity(intent);
+
+
 
                     /*textView.setText(new String(responseBody));
                     Toast.makeText(getApplicationContext(),new String(responseBody),Toast.LENGTH_LONG).show();*/
                 }
             }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-                //打印异常信息
-                error.printStackTrace();
-            }
         });
     }
 
-    //获取本地IP
-    public  String getLocalIpAddress() {
-        try {
-            String ipv4;
 
-            List nilist = Collections.list(NetworkInterface.getNetworkInterfaces());
-            for (int i = 0;i < nilist.size(); i++)
-            {
-                NetworkInterface ni = (NetworkInterface) nilist.get(i);
-                List  ialist = Collections.list(ni.getInetAddresses());
-                for (int j = 0; j < ialist.size(); j++){
-                    InetAddress address = (InetAddress) ialist.get(j);
-                    if (!address.isLoopbackAddress() && InetAddressUtils.isIPv4Address(ipv4=address.getHostAddress()))
-                    {
-                        return ipv4;
-                    }
-                }
-
-            }
-
-        } catch (SocketException ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }
-
-    //发送手机的IP和时间
-    private void sendIP(String myIP,String str){
-        AsyncHttpClient asyncHttpClient= new AsyncHttpClient();
-        String url="http://120.78.76.219/CP/servlet/receive";
-        RequestParams params=new RequestParams();
-        params.put("ip",myIP);
-        params.put("time",str);
-        asyncHttpClient.post(url, params, new AsyncHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
-                Toast.makeText(getApplicationContext(),"获取IP成功",Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
-
-            }
-        });
-    }
-    //获取系统的时间
-    private String getCurrentTime(){
-
-        SimpleDateFormat formatter = new SimpleDateFormat ("yyyy年MM月dd日 HH时mm分ss秒");
-        Date curDate = new Date();//获取当前时间
-        String str = formatter.format(curDate);
-        return str;
-    }
 
 
 
