@@ -1,12 +1,9 @@
 package com.example.signin;
 
-import android.content.Context;
+
 import android.content.Intent;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.telephony.TelephonyManager;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
@@ -16,26 +13,12 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.AsyncHttpResponseHandler;
-import com.loopj.android.http.RangeFileAsyncHttpResponseHandler;
-import com.loopj.android.http.RequestHandle;
+import com.loopj.android.http.BaseJsonHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.TextHttpResponseHandler;
 
-import java.io.File;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-
+import JsonBean.JsonUtils;
+import JsonBean.Response;
 import cz.msebera.android.httpclient.Header;
-import cz.msebera.android.httpclient.conn.util.InetAddressUtils;
 
 import static com.example.signin.Second.isWifiEnabled;
 
@@ -87,43 +70,38 @@ public class MainActivity extends AppCompatActivity {
     //登录连接服务器
     private void loginSendData(String name,String password){
         AsyncHttpClient asyncHttpClient= new AsyncHttpClient();
-        String url="http://120.78.76.219/CP/servlet/login";
+        String url="http://192.168.136.122:8080/Struts2Sign/login.action";
         RequestParams params=new RequestParams();
         params.put("username",name);
         params.put("userpass",password);
-        asyncHttpClient.post(url.toString().trim(), params, new TextHttpResponseHandler() {
+        asyncHttpClient.post(url, params, new BaseJsonHttpResponseHandler<Response>() {
             @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                //打印异常信息
-                throwable.printStackTrace();
-            }
-
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseString) {
+            public void onSuccess(int statusCode, Header[] headers, String rawJsonResponse, Response response) {
                 if (statusCode==200){
                     //获取Id
-                    final String id = responseString;
-                    Log.d("获得的返回值______________",id);
-
-
+                    Response mresponse = JsonUtils.getResponse(rawJsonResponse);
+                    final String id = mresponse.getId();
+                    Log.d("获得的id______________",id);
                     Intent intent= new Intent(MainActivity.this,Second.class);
                     Bundle bundle= new Bundle();
                     bundle.putString("id",id);
-                    intent.putExtra("bundle",bundle);
-
+                    intent.putExtras(bundle);
                     startActivity(intent);
-
-
-
                     /*textView.setText(new String(responseBody));
                     Toast.makeText(getApplicationContext(),new String(responseBody),Toast.LENGTH_LONG).show();*/
                 }
             }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable throwable, String rawJsonData, Response errorResponse) {
+
+            }
+
+            @Override
+            protected Response parseResponse(String rawJsonData, boolean isFailure) throws Throwable {
+                return null;
+            }
         });
+
     }
-
-
-
-
-
 }
